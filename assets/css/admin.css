@@ -63,7 +63,9 @@
 	font-weight: 600;
 }
 
-.photofetch-load-more {
+/* Matches core's `.wp-core-ui .button` specificity plus one, so its
+   `display: inline-block; margin: 0` doesn't win. */
+.wp-core-ui .button.photofetch-load-more {
 	display: block;
 	margin: 16px auto 0;
 }
