@@ -263,7 +263,9 @@ class PhotoFetch_Importer {
 			return $tmp_file;
 		}
 
-		$filename  = self::guess_filename( $source_url, $photo );
+		$title = ( null !== $args['title'] && '' !== $args['title'] ) ? $args['title'] : $photo['title'];
+
+		$filename  = self::guess_filename( $source_url, $photo, $title );
 		$converted = self::maybe_convert_image( $tmp_file, $filename );
 		$tmp_file  = $converted['tmp_file'];
 		$filename  = $converted['filename'];
@@ -273,7 +275,6 @@ class PhotoFetch_Importer {
 			'tmp_name' => $tmp_file,
 		);
 
-		$title   = ( null !== $args['title'] && '' !== $args['title'] ) ? $args['title'] : $photo['title'];
 		$alt     = ( null !== $args['alt'] ) ? $args['alt'] : $photo['alt'];
 		$caption = $args['caption'];
 
@@ -413,21 +414,62 @@ class PhotoFetch_Importer {
 	}
 
 	/**
-	 * Derives a sensible local filename for a downloaded photo, falling back
-	 * to the photo's slug/ID if the source URL has no usable basename.
+	 * Derives a sensible local filename for a downloaded photo.
+	 *
+	 * The Photo Directory serves its images under opaque hashed names like
+	 * "2636ad781335e1299.12442141.jpeg", so the filename is built from the
+	 * attachment title plus the photo ID instead, e.g.
+	 * "low-clouds-along-a-mountain-ridge-250633.jpeg". The ID keeps names
+	 * unique and traceable back to the source photo. Falls back to the
+	 * source URL's basename when the title yields no usable slug, such as
+	 * a title written entirely in a non-Latin script.
 	 *
 	 * @param string $url   Source image URL.
 	 * @param array  $photo Normalized photo data.
+	 * @param string $title Title the attachment is being imported with.
 	 * @return string Sanitized filename.
 	 */
-	private static function guess_filename( $url, $photo ) {
+	private static function guess_filename( $url, $photo, $title ) {
 		$path = wp_parse_url( $url, PHP_URL_PATH );
 		$base = $path ? basename( $path ) : '';
-		if ( ! $base || false === strpos( $base, '.' ) ) {
-			$slug = ! empty( $photo['slug'] ) ? $photo['slug'] : 'photo-' . $photo['id'];
-			$base = sanitize_file_name( $slug ) . '.jpg';
+		$ext  = $base ? strtolower( (string) pathinfo( $base, PATHINFO_EXTENSION ) ) : '';
+		if ( ! $ext ) {
+			$ext = 'jpg';
 		}
-		return sanitize_file_name( $base );
+
+		// sanitize_title() keeps non-ASCII characters as percent-encoded
+		// octets, which make unreadable filenames, so drop them.
+		$slug = sanitize_title( remove_accents( $title ) );
+		$slug = trim( preg_replace( '/-+/', '-', preg_replace( '/%[a-f0-9]{2}/i', '', $slug ) ), '-' );
+
+		if ( strlen( $slug ) > 60 ) {
+			$slug = substr( $slug, 0, 60 );
+			$cut  = strrpos( $slug, '-' );
+			if ( false !== $cut ) {
+				$slug = substr( $slug, 0, $cut );
+			}
+		}
+
+		if ( '' !== $slug ) {
+			$filename = $slug . '-' . $photo['id'] . '.' . $ext;
+		} elseif ( $base && false !== strpos( $base, '.' ) ) {
+			$filename = $base;
+		} else {
+			$filename = 'photo-' . $photo['id'] . '.' . $ext;
+		}
+
+		/**
+		 * Filters the filename an imported photo is saved under.
+		 *
+		 * @param string $filename Filename, including the extension of the
+		 *                         downloaded file. Swapped to .webp or .avif
+		 *                         afterwards when format conversion is on.
+		 * @param array  $photo    Normalized photo data.
+		 * @param string $title    Title the attachment is being imported with.
+		 */
+		$filename = apply_filters( 'photofetch_import_filename', $filename, $photo, $title );
+
+		return sanitize_file_name( $filename );
 	}
 
 	/**
