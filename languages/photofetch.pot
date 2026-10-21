@@ -91,6 +91,10 @@ msgid "Something went wrong. Please try again."
 msgstr ""
 
 #: includes/class-photofetch-plugin.php:188
+msgid "Insert into post"
+msgstr ""
+
+#: includes/class-photofetch-plugin.php:189
 msgid "Use as featured image"
 msgstr ""
 

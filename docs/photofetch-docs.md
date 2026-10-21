@@ -84,9 +84,11 @@ In short, an imported photo behaves from that point on exactly like a photo that
 
 ### The Classic Editor Pop-Up
 
-The **Photo Directory** button next to **Add Media** opens a pop-up window holding a search field and a grid of photos, each with its own **Import** button. Imported cards show an **Imported** label, a **View in Media Library** link that opens the attachment in a new browser tab, and a **Use as featured image** button that sets the photo as the featured image for the post being edited.
+The **Photo Directory** button next to **Add Media** opens a pop-up window holding a search field and a grid of photos, each with its own **Import** button. Imported cards show an **Imported** label, a **View in Media Library** link that opens the attachment in a new browser tab, an **Insert into post** button that places the photo at the cursor in the editor, and a **Use as featured image** button that sets the photo as the featured image for the post being edited.
 
-This pop-up appears only in the classic editor, and its **Use as featured image** button works because the window is tied to the post being edited.
+**Insert into post** works the same way as **Add Media**: it uses the site's default image size, alignment and link settings (falling back to the Large size), and adds the photographer credit as a caption when the attachment has one.
+
+This pop-up appears only in the classic editor, and its **Insert into post** and **Use as featured image** buttons work because the window is tied to the editor and post being edited.
 
 ### What Lands In The Media Library
 
@@ -166,7 +168,8 @@ The plugin has no settings screen. It is ready to use as soon as it is active.
 
 1. Open a post in the classic editor.
 2. Select the **Photo Directory** button next to **Add Media**. A pop-up window opens with a search grid.
-3. Import a photo, then select **Use as featured image**. The pop-up closes and the featured image is replaced.
+3. Place the cursor in the post content, import a photo, then select **Insert into post**. The pop-up closes and the photo appears at the cursor, with the credit as its caption.
+4. Open the pop-up again, import a different photo, then select **Use as featured image**. The pop-up closes and the featured image is replaced.
 
 After testing, any unwanted photos can be removed from **Media > Library** the same way as any other attachment.
 

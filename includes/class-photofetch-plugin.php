@@ -185,6 +185,7 @@ class PhotoFetch_Plugin {
 					'loadMore'      => __( 'Load more', 'photofetch' ),
 					'noResults'     => __( 'No photos found.', 'photofetch' ),
 					'error'         => __( 'Something went wrong. Please try again.', 'photofetch' ),
+					'insert'        => __( 'Insert into post', 'photofetch' ),
 					'useFeatured'   => __( 'Use as featured image', 'photofetch' ),
 					'viewInLibrary' => __( 'View in Media Library', 'photofetch' ),
 					'close'         => __( 'Close', 'photofetch' ),

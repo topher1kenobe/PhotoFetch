@@ -206,10 +206,28 @@
 					] )
 				);
 
+				if ( self.opts.onInsert ) {
+					var insertBtn = el(
+						'button',
+						{ type: 'button', class: 'button button-small button-primary' },
+						[ document.createTextNode( S.strings.insert ) ]
+					);
+					insertBtn.addEventListener( 'click', function () {
+						insertBtn.disabled = true;
+						self.opts.onInsert( attachment, function () {
+							insertBtn.disabled = false;
+						} );
+					} );
+					actions.appendChild( insertBtn );
+				}
+
 				if ( self.opts.onImport ) {
 					var setBtn = el(
 						'button',
-						{ type: 'button', class: 'button button-small button-primary' },
+						{
+							type: 'button',
+							class: self.opts.onInsert ? 'button button-small' : 'button button-small button-primary',
+						},
 						[ document.createTextNode( S.strings.useFeatured ) ]
 					);
 					setBtn.addEventListener( 'click', function () {
@@ -229,10 +247,52 @@
 		return new PhotoFetchView( container, opts );
 	};
 
+	/**
+	 * Inserts an imported attachment into a classic editor, the same way the
+	 * core Add Media button does: the server builds the HTML (so captions,
+	 * size classes and the image_send_to_editor filter all apply), then
+	 * wp.media.editor.insert() puts it at the cursor in the Visual or Code tab.
+	 *
+	 * @param {number} id       Attachment ID.
+	 * @param {string} editorId ID of the editor to insert into.
+	 * @return {Promise} Resolves once the HTML is inserted.
+	 */
+	function insertIntoEditor( id, editorId ) {
+		var media = wp.media;
+		var attachment = media.attachment( id );
+
+		return attachment
+			.fetch()
+			.then( function () {
+				var defaults = media.view.settings.defaultProps || {};
+				return media.editor.send.attachment(
+					{
+						size: defaults.size || 'large',
+						align: defaults.align || 'none',
+						link: defaults.link || 'none',
+					},
+					attachment.toJSON()
+				);
+			} )
+			.then( function ( html ) {
+				if ( editorId ) {
+					media.editor.activeEditor = editorId;
+				}
+				media.editor.insert( html );
+			} );
+	}
+
 	// ---- Reusable modal, used by the classic-editor button and the block-editor sidebar ----
 	var modalEl = null;
 
+	// The modal is built once and reused, so its callbacks read the options
+	// from the most recent openModal() call rather than the first one. That
+	// keeps inserts going to the editor whose button was actually clicked.
+	var modalOpts = {};
+
 	window.PhotoFetch.openModal = function ( opts ) {
+		modalOpts = opts || {};
+
 		if ( modalEl ) {
 			modalEl.style.display = 'flex';
 			return;
@@ -255,7 +315,18 @@
 			}
 		} );
 
-		window.PhotoFetch.render( body, opts );
+		window.PhotoFetch.render( body, {
+			onImport: modalOpts.onImport
+				? function () {
+						return modalOpts.onImport.apply( null, arguments );
+				  }
+				: null,
+			onInsert: modalOpts.onInsert
+				? function () {
+						return modalOpts.onInsert.apply( null, arguments );
+				  }
+				: null,
+		} );
 	};
 
 	window.PhotoFetch.closeModal = function () {
@@ -272,8 +343,25 @@
 
 		document.querySelectorAll( '.photofetch-open-modal' ).forEach( function ( btn ) {
 			btn.addEventListener( 'click', function ( e ) {
+				var editorId = btn.getAttribute( 'data-editor' );
+				var canInsert = !! ( window.wp && wp.media && wp.media.editor && wp.media.attachment );
+
 				e.preventDefault();
 				window.PhotoFetch.openModal( {
+					onInsert: canInsert
+						? function ( attachment, done ) {
+								insertIntoEditor( attachment.id, editorId ).then(
+									function () {
+										done();
+										window.PhotoFetch.closeModal();
+									},
+									function () {
+										done();
+										window.alert( S.strings.error );
+									}
+								);
+						  }
+						: null,
 					onImport: function ( attachment ) {
 						if ( window.wp && wp.media && wp.media.featuredImage ) {
 							wp.media.featuredImage.set( attachment.id );
