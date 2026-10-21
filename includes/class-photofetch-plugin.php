@@ -438,7 +438,7 @@ class PhotoFetch_Plugin {
 			return;
 		}
 		printf(
-			' <button type="button" class="button photofetch-open-modal" data-editor="%s"><span class="dashicons dashicons-camera" style="vertical-align:text-bottom;"></span> %s</button>',
+			' <button type="button" class="button photofetch-open-modal" data-editor="%s"><span class="wp-media-buttons-icon dashicons dashicons-camera" aria-hidden="true"></span> %s</button>',
 			esc_attr( $editor_id ),
 			esc_html__( 'Photo Directory', 'photofetch' )
 		);
